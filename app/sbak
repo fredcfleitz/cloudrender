@@ -1,0 +1,26 @@
+from datetime import datetime
+import os
+import sys
+
+import boto3
+import bpy
+
+
+argv = sys.argv
+argv = argv[argv.index("--") + 1:]
+
+s3 = boto3.resource("s3")
+BUCKET_NAME = "lambda-render-bucket2"
+filename = f"{datetime.now().strftime('%Y_%m_%d-%I:%M:%S_%p')}.png"
+
+print("TEST1")
+s3.Bucket(BUCKET_NAME).download_file("scenes/scene.blend", "/tmp/scene.blend")
+print("TEST2")
+
+bpy.ops.wm.open_mainfile(filepath="/tmp/scene.blend", load_ui=False)
+bpy.context.scene.render.filepath = f"/tmp/{filename}"
+bpy.context.scene.render.resolution_x = int(argv[0])
+bpy.context.scene.render.resolution_y = int(argv[1])
+bpy.ops.render.render(write_still = True)
+
+s3.Bucket(BUCKET_NAME).upload_file(f"/tmp/{filename}", f"renders/{filename}")
